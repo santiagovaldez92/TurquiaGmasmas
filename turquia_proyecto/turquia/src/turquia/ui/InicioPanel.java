@@ -1,20 +1,25 @@
 package turquia.ui;
 
+import turquia.model.Rol;
 import turquia.model.Usuario;
+import turquia.util.DataStore;
 import turquia.util.Palette;
 import turquia.util.RoundedPanel;
+import turquia.util.UIFactory;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
 
 public class InicioPanel extends JPanel {
 
-    public InicioPanel(Usuario usuario) {
+    public InicioPanel(Usuario usuario, MainFrame main) {
         setLayout(new BorderLayout(0, 0));
-        setBackground(Palette.GRIS_FONDO);
+        setBackground(Palette.GUINDO_OSCURO);
         setBorder(new EmptyBorder(30, 40, 30, 40));
 
         // ── Bienvenida ────────────────────────────────────────────────────
@@ -24,7 +29,7 @@ public class InicioPanel extends JPanel {
 
         JLabel welcome = new JLabel("¡Bienvenido, " + firstName(usuario.getNombre()) + "!");
         welcome.setFont(Palette.fontBold(26));
-        welcome.setForeground(Palette.NAVY);
+        welcome.setForeground(Palette.TEXTO_CLARO);
         topRow.add(welcome, BorderLayout.WEST);
 
         String ts = LocalDateTime.now().format(DateTimeFormatter.ofPattern("EEEE, d 'de' MMMM 'de' yyyy"));
@@ -35,37 +40,108 @@ public class InicioPanel extends JPanel {
 
         add(topRow, BorderLayout.NORTH);
 
-        // ── Cards grid ────────────────────────────────────────────────────
-        JPanel grid = new JPanel(new GridLayout(2, 3, 18, 18));
+        // ── Cards grid según rol ──────────────────────────────────────────
+        List<CardDef> cards = buildCardsForRole(usuario);
+
+        int cols = 3;
+        int rows = (int) Math.ceil(cards.size() / (double) cols);
+        JPanel grid = new JPanel(new GridLayout(rows, cols, 18, 18));
         grid.setOpaque(false);
 
-        grid.add(buildCard("👥", "Estudiantes", "Gestión de alumnos", Palette.VERDE_BTN));
-        grid.add(buildCard("📅", "Horarios", "Consulta de horarios", new Color(0x5C7AEA)));
-        grid.add(buildCard("📚", "Materias", "Próximamente", new Color(0xE67E22)));
-        grid.add(buildCard("👨‍🏫", "Docentes", "Próximamente", new Color(0x8E44AD)));
-        grid.add(buildCard("📊", "Reportes", "Próximamente", new Color(0xE74C3C)));
-        grid.add(buildCard("⚙️", "Configuración", "Próximamente", new Color(0x7F8C8D)));
+        for (CardDef cd : cards) {
+            JPanel card = buildCard(cd.icon, cd.title, cd.subtitle, cd.accent);
+            if (cd.page != null) {
+                card.addMouseListener(new java.awt.event.MouseAdapter() {
+                    @Override public void mouseClicked(java.awt.event.MouseEvent e) {
+                        main.navigateTo(cd.page);
+                    }
+                });
+            }
+            grid.add(card);
+        }
+        // Rellenar huecos si no es múltiplo exacto
+        while (grid.getComponentCount() < rows * cols) {
+            JPanel empty = new JPanel();
+            empty.setOpaque(false);
+            grid.add(empty);
+        }
 
-        add(grid, BorderLayout.CENTER);
+        JPanel gridWrap = new JPanel(new BorderLayout());
+        gridWrap.setOpaque(false);
+        gridWrap.add(grid, BorderLayout.NORTH);
+        add(gridWrap, BorderLayout.CENTER);
 
         // ── Info strip ────────────────────────────────────────────────────
-        JPanel strip = new JPanel(new FlowLayout(FlowLayout.LEFT, 20, 10));
+        JPanel strip = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 10));
         strip.setOpaque(false);
         strip.setBorder(new EmptyBorder(18, 0, 0, 0));
 
-        strip.add(buildBadge("Rol: " + usuario.getRol(), Palette.NAVY));
-        strip.add(buildBadge("UAJMS – Turquia v1.0", Palette.AMARILLO_OS));
+        strip.add(UIFactory.pill("Rol: " + usuario.getRolEtiqueta(), rolColor(usuario.getRol())));
+        strip.add(UIFactory.pill("UAJMS – TURQUIA v2.0", Palette.MAGENTA));
+
+        if (usuario.getRol() == Rol.ESTUDIANTE) {
+            int n = usuario.getMateriasInscritas().size();
+            strip.add(UIFactory.pill(n + " materia(s) inscrita(s)", Palette.CIAN_OSCURO));
+        } else if (usuario.getRol() == Rol.DOCENTE) {
+            int n = usuario.getMateriasImpartidas().size();
+            strip.add(UIFactory.pill(n + " materia(s) a cargo", Palette.CIAN_OSCURO));
+        } else if (usuario.getRol() == Rol.ADMINISTRADOR) {
+            int total = DataStore.getInstance().getUsuarios().size();
+            strip.add(UIFactory.pill(total + " usuario(s) registrados", Palette.CIAN_OSCURO));
+        }
 
         add(strip, BorderLayout.SOUTH);
     }
 
+    private Color rolColor(Rol rol) {
+        switch (rol) {
+            case ESTUDIANTE: return Palette.CIAN_OSCURO;
+            case DOCENTE: return Palette.MAGENTA_OSCURO;
+            case ADMINISTRADOR: return Palette.ADVERTENCIA;
+            default: return Palette.CIAN_OSCURO;
+        }
+    }
+
+    // ── Definición de tarjetas según rol ────────────────────────────────
+    private static class CardDef {
+        String icon, title, subtitle, page;
+        Color accent;
+        CardDef(String icon, String title, String subtitle, Color accent, String page) {
+            this.icon = icon; this.title = title; this.subtitle = subtitle;
+            this.accent = accent; this.page = page;
+        }
+    }
+
+    private List<CardDef> buildCardsForRole(Usuario usuario) {
+        List<CardDef> list = new ArrayList<>();
+        Rol rol = usuario.getRol();
+
+        if (rol == Rol.ESTUDIANTE) {
+            list.add(new CardDef("👥", "Estudiantes", "Ver compañeros registrados", Palette.CIAN, "estudiantes"));
+            list.add(new CardDef("👨‍🏫", "Docentes", "Ver docentes registrados", Palette.MAGENTA, "docentes"));
+            list.add(new CardDef("📅", "Horarios", "Tus materias y notas", Palette.CIAN_OSCURO, "horarios"));
+        } else if (rol == Rol.DOCENTE) {
+            list.add(new CardDef("👥", "Estudiantes", "Gestión de alumnos y notas", Palette.CIAN, "estudiantes"));
+            list.add(new CardDef("📅", "Horarios", "Tus materias asignadas", Palette.CIAN_OSCURO, "horarios"));
+            list.add(new CardDef("📚", "Materias", "Catálogo de materias", Palette.MAGENTA, "materias"));
+            list.add(new CardDef("📨", "Reportes", "Enviar informe a administración", Palette.ADVERTENCIA, "reportes"));
+        } else if (rol == Rol.ADMINISTRADOR) {
+            list.add(new CardDef("👥", "Estudiantes", "Gestión de alumnos y notas", Palette.CIAN, "estudiantes"));
+            list.add(new CardDef("👨‍🏫", "Docentes", "Gestión de docentes", Palette.MAGENTA, "docentes"));
+            list.add(new CardDef("📅", "Horarios", "Materias y horarios", Palette.CIAN_OSCURO, "horarios"));
+            list.add(new CardDef("📚", "Materias", "Catálogo de materias", Palette.MAGENTA_OSCURO, "materias"));
+            list.add(new CardDef("📨", "Reportes", "Informes recibidos", Palette.ADVERTENCIA, "reportes"));
+            list.add(new CardDef("🛠", "Usuarios", "Crear, editar y eliminar usuarios", Palette.EXITO, "usuarios"));
+        }
+        return list;
+    }
+
     private JPanel buildCard(String icon, String title, String subtitle, Color accent) {
-        RoundedPanel card = new RoundedPanel(14, Color.WHITE);
+        RoundedPanel card = new RoundedPanel(14, Palette.GUINDO);
         card.setLayout(new BorderLayout(0, 0));
         card.setBorder(new EmptyBorder(22, 22, 22, 22));
         card.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
-        // Accent bar on left
         JPanel accentBar = new JPanel() {
             @Override protected void paintComponent(Graphics g) {
                 g.setColor(accent);
@@ -85,7 +161,7 @@ public class InicioPanel extends JPanel {
 
         JLabel ttl = new JLabel(title);
         ttl.setFont(Palette.fontBold(15));
-        ttl.setForeground(Palette.NAVY);
+        ttl.setForeground(Palette.TEXTO_CLARO);
 
         JLabel sub = new JLabel(subtitle);
         sub.setFont(Palette.fontPlain(12));
@@ -96,40 +172,16 @@ public class InicioPanel extends JPanel {
         content.add(sub);
         card.add(content, BorderLayout.CENTER);
 
-        // Hover effect
         card.addMouseListener(new java.awt.event.MouseAdapter() {
             @Override public void mouseEntered(java.awt.event.MouseEvent e) {
-                card.repaint();
-                ((RoundedPanel)card).setBackground2(new Color(248, 250, 255));
+                card.setBackground2(Palette.GUINDO_CLARO);
             }
             @Override public void mouseExited(java.awt.event.MouseEvent e) {
-                ((RoundedPanel)card).setBackground2(Color.WHITE);
+                card.setBackground2(Palette.GUINDO);
             }
         });
 
         return card;
-    }
-
-    private JLabel buildBadge(String text, Color color) {
-        JLabel lbl = new JLabel("  " + text + "  ") {
-            @Override protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                g2.setColor(color);
-                g2.fillRoundRect(0, 0, getWidth(), getHeight(), 20, 20);
-                g2.setColor(Color.WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                g2.drawString(getText(), (getWidth()-fm.stringWidth(getText()))/2,
-                    (getHeight()+fm.getAscent()-fm.getDescent())/2);
-                g2.dispose();
-            }
-        };
-        lbl.setFont(Palette.fontBold(12));
-        lbl.setForeground(Color.WHITE);
-        lbl.setOpaque(false);
-        lbl.setPreferredSize(new Dimension(text.length() * 9 + 20, 30));
-        return lbl;
     }
 
     private String firstName(String fullName) {
