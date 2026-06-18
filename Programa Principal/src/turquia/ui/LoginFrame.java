@@ -4,12 +4,12 @@ import turquia.model.Usuario;
 import turquia.util.AuthService;
 import turquia.util.Palette;
 import turquia.util.RoundedPanel;
+import turquia.util.UIFactory;
 
 import javax.swing.*;
 import javax.swing.border.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.awt.geom.RoundRectangle2D;
 
 public class LoginFrame extends JFrame {
 
@@ -22,59 +22,71 @@ public class LoginFrame extends JFrame {
         setSize(900, 600);
         setLocationRelativeTo(null);
         setResizable(false);
-        setUndecorated(false);
 
-        // Panel principal con fondo de paisaje simulado
         BackgroundPanel bg = new BackgroundPanel();
         bg.setLayout(new BorderLayout());
 
-        // ── Header amarillo ──────────────────────────────────────────────
+        // ── Header ───────────────────────────────────────────────────────
         JPanel header = new JPanel(new FlowLayout(FlowLayout.CENTER, 0, 18));
-        header.setBackground(Palette.AMARILLO);
-        header.setPreferredSize(new Dimension(900, 70));
-
-        JLabel lblLogo = buildLogoLabel();
-        header.add(lblLogo);
+        header.setOpaque(false);
+        header.setPreferredSize(new Dimension(900, 80));
+        header.add(buildLogoLabel(40));
         bg.add(header, BorderLayout.NORTH);
 
-        // ── Tarjeta central de login ──────────────────────────────────────
+        // ── Tarjeta central de login ────────────────────────────────────
         JPanel center = new JPanel(new GridBagLayout());
         center.setOpaque(false);
 
-        RoundedPanel card = new RoundedPanel(18, new Color(255, 255, 255, 235));
+        RoundedPanel card = new RoundedPanel(18, Palette.GUINDO);
         card.setLayout(new GridBagLayout());
-        card.setPreferredSize(new Dimension(380, 310));
+        card.setPreferredSize(new Dimension(380, 320));
+        card.setBorder(new LineBorder(Palette.GUINDO_BORDE, 1, true));
 
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 30, 5, 30);
         gbc.fill = GridBagConstraints.HORIZONTAL;
         gbc.gridx = 0;
 
-        // Título
         JLabel title = new JLabel("Acceder al Sistema", SwingConstants.CENTER);
-        title.setFont(Palette.fontPlain(18));
-        title.setForeground(Palette.NAVY);
+        title.setFont(Palette.fontBold(20));
+        title.setForeground(Palette.CIAN);
         gbc.gridy = 0;
-        gbc.insets = new Insets(28, 30, 18, 30);
+        gbc.insets = new Insets(30, 30, 22, 30);
         card.add(title, gbc);
 
-        // Campo usuario
         gbc.gridy = 1;
         gbc.insets = new Insets(4, 30, 4, 30);
-        txtUsuario = buildTextField("Usuario:");
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        JLabel lblUser = new JLabel("Usuario:");
+        lblUser.setFont(Palette.fontPlain(12));
+        lblUser.setForeground(Palette.TEXTO_GRIS);
+        card.add(lblUser, gbc);
+
+        gbc.gridy = 2;
+        gbc.insets = new Insets(2, 30, 10, 30);
+        txtUsuario = UIFactory.textField();
         card.add(txtUsuario, gbc);
 
-        // Campo password
-        gbc.gridy = 2;
-        txtPassword = buildPasswordField("Contraseña:");
+        gbc.gridy = 3;
+        gbc.insets = new Insets(4, 30, 4, 30);
+        JLabel lblPass = new JLabel("Contraseña:");
+        lblPass.setFont(Palette.fontPlain(12));
+        lblPass.setForeground(Palette.TEXTO_GRIS);
+        card.add(lblPass, gbc);
+
+        gbc.gridy = 4;
+        gbc.insets = new Insets(2, 30, 4, 30);
+        txtPassword = UIFactory.passwordField();
         card.add(txtPassword, gbc);
 
-        // Botón ingresar
-        gbc.gridy = 3;
-        gbc.insets = new Insets(14, 30, 28, 30);
+        gbc.gridy = 5;
+        gbc.insets = new Insets(18, 30, 30, 30);
         gbc.anchor = GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.NONE;
-        JButton btnLogin = buildLoginButton();
+        JButton btnLogin = UIFactory.primaryButton("  Ingresar  ");
+        btnLogin.setPreferredSize(new Dimension(130, 40));
+        btnLogin.setFont(Palette.fontBold(14));
+        btnLogin.addActionListener(e -> doLogin());
         card.add(btnLogin, gbc);
 
         center.add(card);
@@ -82,140 +94,53 @@ public class LoginFrame extends JFrame {
 
         // ── Footer ───────────────────────────────────────────────────────
         JPanel footer = new JPanel(new BorderLayout());
-        footer.setBackground(new Color(255,255,255,180));
+        footer.setOpaque(false);
         footer.setPreferredSize(new Dimension(900, 46));
-        footer.setBorder(new MatteBorder(1, 0, 0, 0, new Color(180,180,180,120)));
+        footer.setBorder(new MatteBorder(1, 0, 0, 0, Palette.GUINDO_BORDE));
 
         JLabel copy = new JLabel(
             "  © 2024 UAJMS – Universidad Autónoma Juan Misael Saracho." +
-            "  Desarrollado por la Unidad de Sistemas DTIC – UAJMS");
+            "  Sistema TURQUIA – Unidad de Sistemas DTIC");
         copy.setFont(Palette.fontPlain(11));
-        copy.setForeground(Palette.TEXTO_GRIS);
+        copy.setForeground(Palette.TEXTO_TENUE);
         footer.add(copy, BorderLayout.CENTER);
         bg.add(footer, BorderLayout.SOUTH);
 
         setContentPane(bg);
-
-        // Enter key triggers login
         getRootPane().setDefaultButton(btnLogin);
     }
 
-    // ── Helpers ───────────────────────────────────────────────────────────
-
-    private JLabel buildLogoLabel() {
+    static JLabel buildLogoLabel(int fontSize) {
         JLabel lbl = new JLabel() {
             @Override
             protected void paintComponent(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g.create();
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // "TURQUIA" text
-                g2.setFont(new Font("SansSerif", Font.BOLD, 36));
+                g2.setFont(new Font("SansSerif", Font.BOLD, fontSize));
                 FontMetrics fm = g2.getFontMetrics();
-
                 String text = "TURQUiA";
-                int totalW = fm.stringWidth(text);
-                int x = (getWidth() - totalW) / 2;
+
+                int x = (getWidth() - fm.stringWidth(text)) / 2;
+                if (getWidth() == 0) x = 0;
                 int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
 
-                // Shadow
-                g2.setColor(new Color(0,0,0,40));
+                g2.setColor(new Color(0,0,0,60));
                 g2.drawString(text, x+2, y+2);
 
-                // White text
-                g2.setColor(Color.WHITE);
+                g2.setColor(Palette.CIAN);
                 g2.drawString(text, x, y);
 
-                // Orange dot on 'i'
                 int iPos = x + fm.stringWidth("TURQUi") - fm.charWidth('i') + fm.charWidth('i')/2;
-                g2.setColor(Palette.NARANJA_PT);
-                g2.fillOval(iPos - 5, y - fm.getAscent() - 6, 12, 12);
+                g2.setColor(Palette.MAGENTA);
+                int dotSize = Math.max(8, fontSize / 3);
+                g2.fillOval(iPos - dotSize/2, y - fm.getAscent() - dotSize/3, dotSize, dotSize);
 
                 g2.dispose();
             }
         };
-        lbl.setPreferredSize(new Dimension(260, 50));
+        lbl.setPreferredSize(new Dimension(260, fontSize + 14));
         return lbl;
-    }
-
-    private JTextField buildTextField(String placeholder) {
-        JTextField tf = new JTextField() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (getText().isEmpty() && !isFocusOwner()) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setColor(new Color(160,160,160));
-                    g2.setFont(getFont().deriveFont(Font.PLAIN, 13f));
-                    Insets ins = getInsets();
-                    g2.drawString(placeholder, ins.left + 2, getHeight() / 2 + g2.getFontMetrics().getAscent() / 2 - 1);
-                    g2.dispose();
-                }
-            }
-        };
-        styleInput(tf);
-        return tf;
-    }
-
-    private JPasswordField buildPasswordField(String placeholder) {
-        JPasswordField pf = new JPasswordField() {
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (getPassword().length == 0 && !isFocusOwner()) {
-                    Graphics2D g2 = (Graphics2D) g.create();
-                    g2.setColor(new Color(160,160,160));
-                    g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
-                    Insets ins = getInsets();
-                    g2.drawString(placeholder, ins.left + 2, getHeight() / 2 + g2.getFontMetrics().getAscent() / 2 - 1);
-                    g2.dispose();
-                }
-            }
-        };
-        styleInput(pf);
-        return pf;
-    }
-
-    private void styleInput(JTextField tf) {
-        tf.setPreferredSize(new Dimension(300, 42));
-        tf.setFont(Palette.fontPlain(14));
-        tf.setForeground(Palette.NAVY);
-        tf.setBackground(Color.WHITE);
-        tf.setBorder(BorderFactory.createCompoundBorder(
-            new LineBorder(new Color(200, 210, 230), 1, true),
-            new EmptyBorder(4, 10, 4, 10)
-        ));
-        tf.setOpaque(true);
-    }
-
-    private JButton buildLoginButton() {
-        JButton btn = new JButton("  Ingresar  ") {
-            @Override
-            protected void paintComponent(Graphics g) {
-                Graphics2D g2 = (Graphics2D) g.create();
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-                Color c = getModel().isRollover() ? Palette.VERDE_HOVER : Palette.VERDE_BTN;
-                g2.setColor(c);
-                g2.fill(new RoundRectangle2D.Float(0, 0, getWidth(), getHeight(), 22, 22));
-                g2.setColor(Color.WHITE);
-                g2.setFont(getFont());
-                FontMetrics fm = g2.getFontMetrics();
-                int tx = (getWidth() - fm.stringWidth(getText())) / 2;
-                int ty = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
-                g2.drawString(getText(), tx, ty);
-                g2.dispose();
-            }
-        };
-        btn.setFont(Palette.fontBold(14));
-        btn.setForeground(Color.WHITE);
-        btn.setPreferredSize(new Dimension(130, 40));
-        btn.setContentAreaFilled(false);
-        btn.setBorderPainted(false);
-        btn.setFocusPainted(false);
-        btn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
-
-        btn.addActionListener(e -> doLogin());
-        return btn;
     }
 
     private void doLogin() {
@@ -231,14 +156,14 @@ public class LoginFrame extends JFrame {
             });
         } else {
             JOptionPane.showMessageDialog(this,
-                "Usuario o contraseña incorrectos.\n\nUsuarios de prueba:\n  diogo / 1234\n  maria / admin\n  carlos / profe",
+                "Usuario o contraseña incorrectos.\n\nUsuarios de prueba:\n  diogo / 1234  (Estudiante)\n  maria / admin (Administrador)\n  carlos / profe (Docente)",
                 "Error de acceso",
                 JOptionPane.WARNING_MESSAGE);
             txtPassword.setText("");
         }
     }
 
-    // ── Fondo con gradiente tipo montaña ─────────────────────────────────
+    // ── Fondo decorativo: guindo oscuro con destellos cian/magenta ───────
     static class BackgroundPanel extends JPanel {
         @Override
         protected void paintComponent(Graphics g) {
@@ -247,33 +172,33 @@ public class LoginFrame extends JFrame {
 
             int w = getWidth(), h = getHeight();
 
-            // Cielo con gradiente
-            GradientPaint sky = new GradientPaint(0, 0, new Color(0x4A7FAB),
-                                                   0, h, new Color(0x2E5E4E));
-            g2.setPaint(sky);
+            // Fondo base con gradiente guindo
+            GradientPaint base = new GradientPaint(0, 0, Palette.GUINDO_OSCURO,
+                                                     w, h, new Color(0x150810));
+            g2.setPaint(base);
             g2.fillRect(0, 0, w, h);
 
-            // Montañas traseras
-            g2.setColor(new Color(58, 107, 85, 180));
-            int[] xMt1 = {0, 150, 280, 400, 520, 650, 780, w, w, 0};
-            int[] yMt1 = {h-180, h-320, h-260, h-380, h-290, h-400, h-340, h-200, h, h};
-            g2.fillPolygon(xMt1, yMt1, xMt1.length);
+            if (w > 0 && h > 0) {
+                // Resplandor cian (esquina superior izquierda)
+                float radius1 = Math.max(w, h) * 0.5f;
+                RadialGradientPaint cianGlow = new RadialGradientPaint(
+                    new java.awt.geom.Point2D.Float(w * 0.15f, h * 0.15f), radius1,
+                    new float[]{0f, 1f},
+                    new Color[]{ new Color(0,229,255,40), new Color(0,229,255,0) }
+                );
+                g2.setPaint(cianGlow);
+                g2.fillRect(0, 0, w, h);
 
-            // Montañas medias
-            g2.setColor(new Color(45, 90, 58, 200));
-            int[] xMt2 = {0, 100, 220, 360, 480, 600, 720, 840, w, w, 0};
-            int[] yMt2 = {h-120, h-260, h-190, h-310, h-230, h-350, h-270, h-190, h-140, h, h};
-            g2.fillPolygon(xMt2, yMt2, xMt2.length);
-
-            // Vegetación delantera
-            g2.setColor(new Color(30, 74, 42, 220));
-            g2.fillRect(0, h - 110, w, 110);
-
-            // Niebla leve
-            GradientPaint fog = new GradientPaint(0, h-200, new Color(255,255,255,0),
-                                                   0, h, new Color(255,255,255,30));
-            g2.setPaint(fog);
-            g2.fillRect(0, 0, w, h);
+                // Resplandor magenta (esquina inferior derecha)
+                float radius2 = Math.max(w, h) * 0.55f;
+                RadialGradientPaint magentaGlow = new RadialGradientPaint(
+                    new java.awt.geom.Point2D.Float(w * 0.85f, h * 0.9f), radius2,
+                    new float[]{0f, 1f},
+                    new Color[]{ new Color(255,20,147,35), new Color(255,20,147,0) }
+                );
+                g2.setPaint(magentaGlow);
+                g2.fillRect(0, 0, w, h);
+            }
 
             g2.dispose();
             super.paintComponent(g);
