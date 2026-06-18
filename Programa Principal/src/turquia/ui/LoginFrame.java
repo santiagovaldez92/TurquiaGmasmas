@@ -99,8 +99,8 @@ public class LoginFrame extends JFrame {
         footer.setBorder(new MatteBorder(1, 0, 0, 0, Palette.GUINDO_BORDE));
 
         JLabel copy = new JLabel(
-            "  © 2024 UAJMS – Universidad Autónoma Juan Misael Saracho." +
-            "  Sistema TURQUIA – Unidad de Sistemas DTIC");
+                "  © 2024 UAJMS – Universidad Autónoma Juan Misael Saracho." +
+                        "  Sistema TURQUIA – Unidad de Sistemas DTIC");
         copy.setFont(Palette.fontPlain(11));
         copy.setForeground(Palette.TEXTO_TENUE);
         footer.add(copy, BorderLayout.CENTER);
@@ -122,19 +122,20 @@ public class LoginFrame extends JFrame {
                 String text = "TURQUiA";
 
                 int x = (getWidth() - fm.stringWidth(text)) / 2;
-                if (getWidth() == 0) x = 0;
+                if (getWidth() == 0)
+                    x = 0;
                 int y = (getHeight() + fm.getAscent() - fm.getDescent()) / 2;
 
-                g2.setColor(new Color(0,0,0,60));
-                g2.drawString(text, x+2, y+2);
+                g2.setColor(new Color(0, 0, 0, 60));
+                g2.drawString(text, x + 2, y + 2);
 
                 g2.setColor(Palette.CIAN);
                 g2.drawString(text, x, y);
 
-                int iPos = x + fm.stringWidth("TURQUi") - fm.charWidth('i') + fm.charWidth('i')/2;
+                int iPos = x + fm.stringWidth("TURQUi") - fm.charWidth('i') + fm.charWidth('i') / 2;
                 g2.setColor(Palette.MAGENTA);
                 int dotSize = Math.max(8, fontSize / 3);
-                g2.fillOval(iPos - dotSize/2, y - fm.getAscent() - dotSize/3, dotSize, dotSize);
+                g2.fillOval(iPos - dotSize / 2, y - fm.getAscent() - dotSize / 3, dotSize, dotSize);
 
                 g2.dispose();
             }
@@ -156,9 +157,9 @@ public class LoginFrame extends JFrame {
             });
         } else {
             JOptionPane.showMessageDialog(this,
-                "Usuario o contraseña incorrectos.\n\nUsuarios de prueba:\n  diogo / 1234  (Estudiante)\n  maria / admin (Administrador)\n  carlos / profe (Docente)",
-                "Error de acceso",
-                JOptionPane.WARNING_MESSAGE);
+                    "Usuario o contraseña incorrectos.\n\nUsuarios de prueba:\n  diogo / 1234  (Estudiante)\n  maria / admin (Administrador)\n  carlos / profe (Docente)",
+                    "Error de acceso",
+                    JOptionPane.WARNING_MESSAGE);
             txtPassword.setText("");
         }
     }
@@ -174,7 +175,7 @@ public class LoginFrame extends JFrame {
 
             // Fondo base con gradiente guindo
             GradientPaint base = new GradientPaint(0, 0, Palette.GUINDO_OSCURO,
-                                                     w, h, new Color(0x150810));
+                    w, h, new Color(0x150810));
             g2.setPaint(base);
             g2.fillRect(0, 0, w, h);
 
@@ -182,20 +183,18 @@ public class LoginFrame extends JFrame {
                 // Resplandor cian (esquina superior izquierda)
                 float radius1 = Math.max(w, h) * 0.5f;
                 RadialGradientPaint cianGlow = new RadialGradientPaint(
-                    new java.awt.geom.Point2D.Float(w * 0.15f, h * 0.15f), radius1,
-                    new float[]{0f, 1f},
-                    new Color[]{ new Color(0,229,255,40), new Color(0,229,255,0) }
-                );
+                        new java.awt.geom.Point2D.Float(w * 0.15f, h * 0.15f), radius1,
+                        new float[] { 0f, 1f },
+                        new Color[] { new Color(0, 229, 255, 40), new Color(0, 229, 255, 0) });
                 g2.setPaint(cianGlow);
                 g2.fillRect(0, 0, w, h);
 
                 // Resplandor magenta (esquina inferior derecha)
                 float radius2 = Math.max(w, h) * 0.55f;
                 RadialGradientPaint magentaGlow = new RadialGradientPaint(
-                    new java.awt.geom.Point2D.Float(w * 0.85f, h * 0.9f), radius2,
-                    new float[]{0f, 1f},
-                    new Color[]{ new Color(255,20,147,35), new Color(255,20,147,0) }
-                );
+                        new java.awt.geom.Point2D.Float(w * 0.85f, h * 0.9f), radius2,
+                        new float[] { 0f, 1f },
+                        new Color[] { new Color(255, 20, 147, 35), new Color(255, 20, 147, 0) });
                 g2.setPaint(magentaGlow);
                 g2.fillRect(0, 0, w, h);
             }

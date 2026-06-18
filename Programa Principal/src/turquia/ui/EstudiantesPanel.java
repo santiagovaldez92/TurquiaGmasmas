@@ -1,21 +1,20 @@
 package turquia.ui;
 
-import turquia.model.*;
+import turquia.model.*; // Universo en memoria
 import turquia.util.*;
+
+// IMPORTS DE TU KARDEX Y MODELOS POO REALES
+import modelos.Estudiante;
+import persistencia.GestorArchivos;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.util.List;
 
 /**
- * Lista de estudiantes. Comportamiento según rol:
- *  - ESTUDIANTE: ve la lista, puede ver el detalle de cualquiera, pero
- *    solo ve SUS PROPIAS notas (las de otros aparecen ocultas).
- *  - DOCENTE: ve la lista, puede abrir el detalle y asignar/quitar materias
- *    y asignar notas a los estudiantes en las materias que él imparte.
- *  - ADMINISTRADOR: igual que docente (acceso total).
+ * Lista de estudiantes conectada tanto a la memoria (DataStore)
+ * como a la persistencia real (GestorArchivos - TXT).
  */
 public class EstudiantesPanel extends JPanel {
 
@@ -28,15 +27,31 @@ public class EstudiantesPanel extends JPanel {
         setBackground(Palette.GUINDO_OSCURO);
         setBorder(new EmptyBorder(30, 40, 30, 40));
 
-        // Header
+        // ── Header ──────────────────────────────────────────────────────
         JPanel header = new JPanel(new BorderLayout());
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(0, 0, 20, 0));
         header.add(UIFactory.sectionTitle("👥 Estudiantes"), BorderLayout.WEST);
-        header.add(UIFactory.subtitle(DataStore.getInstance().getEstudiantes().size() + " estudiante(s) registrados"), BorderLayout.EAST);
+
+        // Panel derecho del header: Contador + Botón para guardar en TXT
+        JPanel rightHeader = new JPanel(new FlowLayout(FlowLayout.RIGHT, 15, 0));
+        rightHeader.setOpaque(false);
+
+        JLabel lblContador = UIFactory.subtitle(DataStore.getInstance().getEstudiantes().size() + " en sesión");
+        rightHeader.add(lblContador);
+
+        // Solo Docentes o Administradores pueden agregar al archivo TXT
+        if (usuarioActual.getRol() == Rol.DOCENTE || usuarioActual.getRol() == Rol.ADMINISTRADOR) {
+            JButton btnAddTxt = UIFactory.primaryButton("➕ Nuevo (Guardar en TXT)");
+            btnAddTxt.setPreferredSize(new Dimension(200, 36));
+            btnAddTxt.addActionListener(e -> agregarEstudianteTxt());
+            rightHeader.add(btnAddTxt);
+        }
+
+        header.add(rightHeader, BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
 
-        // List
+        // ── List Container ──────────────────────────────────────────────
         listContainer = new JPanel();
         listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
         listContainer.setOpaque(false);
@@ -51,27 +66,109 @@ public class EstudiantesPanel extends JPanel {
         add(scroll, BorderLayout.CENTER);
     }
 
+    // ── LÓGICA DE PERSISTENCIA Y POO (EL PUENTE) ──────────────────────
+    private void agregarEstudianteTxt() {
+        String id = JOptionPane.showInputDialog(this, "ID / CI del estudiante:");
+        if (id == null || id.trim().isEmpty())
+            return;
+
+        String nombre = JOptionPane.showInputDialog(this, "Nombre completo:");
+        if (nombre == null || nombre.trim().isEmpty())
+            return;
+
+        String carrera = JOptionPane.showInputDialog(this, "Carrera:");
+        String password = "123"; // Contraseña por defecto para nuevos
+
+        // 1. Instanciamos tu clase con herencia (Estudiante extends modelos.Usuario)
+        modelos.Estudiante nuevo = new modelos.Estudiante(id, nombre, password, carrera);
+
+        // 2. Leemos la lista actual del TXT, agregamos y volvemos a guardar
+        List<modelos.Estudiante> listaTxt = persistencia.GestorArchivos.leerEstudiantes();
+        listaTxt.add(nuevo);
+        persistencia.GestorArchivos.guardarEstudiantes(listaTxt);
+
+        JOptionPane.showMessageDialog(this, "Estudiante guardado permanentemente en 'estudiantes.txt'.", "Éxito",
+                JOptionPane.INFORMATION_MESSAGE);
+
+        // 3. Refrescamos la vista
+        refreshList();
+    }
+
     private void refreshList() {
         listContainer.removeAll();
-        List<Usuario> estudiantes = DataStore.getInstance().getEstudiantes();
 
-        for (Usuario est : estudiantes) {
+        // PARTE 1: Estudiantes en memoria (DataStore)
+        List<turquia.model.Usuario> estudiantesMemoria = DataStore.getInstance().getEstudiantes();
+        for (turquia.model.Usuario est : estudiantesMemoria) {
             listContainer.add(buildRow(est));
             listContainer.add(Box.createVerticalStrut(10));
+        }
+
+        // PARTE 2: Estudiantes en Archivo TXT (Tu módulo Kardéx)
+        List<modelos.Estudiante> estudiantesTxt = persistencia.GestorArchivos.leerEstudiantes();
+        if (!estudiantesTxt.isEmpty()) {
+            // Título separador
+            JLabel lblTxt = new JLabel("💾 Registros Persistentes (estudiantes.txt)");
+            lblTxt.setFont(Palette.fontBold(16));
+            lblTxt.setForeground(Palette.MAGENTA);
+            lblTxt.setBorder(new EmptyBorder(20, 0, 10, 0));
+            listContainer.add(lblTxt);
+
+            // Iteramos sobre tu modelo POO real
+            for (modelos.Estudiante estTxt : estudiantesTxt) {
+                listContainer.add(buildTxtRow(estTxt));
+                listContainer.add(Box.createVerticalStrut(10));
+            }
         }
 
         listContainer.revalidate();
         listContainer.repaint();
     }
 
-    private RoundedPanel buildRow(Usuario est) {
+    /** Fila visual para los estudiantes que vienen del archivo TXT */
+    private RoundedPanel buildTxtRow(modelos.Estudiante est) {
         RoundedPanel row = new RoundedPanel(12, Palette.GUINDO);
         row.setLayout(new BorderLayout(14, 0));
         row.setBorder(new EmptyBorder(16, 20, 16, 20));
         row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
         row.setPreferredSize(new Dimension(10, 70));
 
-        // Avatar + nombre
+        JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
+        left.setOpaque(false);
+
+        JLabel avatar = new JLabel("📝");
+        avatar.setFont(new Font("SansSerif", Font.PLAIN, 26));
+        left.add(avatar);
+
+        JPanel namePanel = new JPanel();
+        namePanel.setLayout(new BoxLayout(namePanel, BoxLayout.Y_AXIS));
+        namePanel.setOpaque(false);
+
+        JLabel name = new JLabel(est.getNombre() + " (ID: " + est.getId() + ")");
+        name.setFont(Palette.fontBold(14));
+        name.setForeground(Palette.TEXTO_CLARO);
+
+        // Aquí demostramos que est pertenece a tu jerarquía de clases POO
+        JLabel sub = new JLabel("Carrera: " + est.getCarrera() + "  ·  Clase: " + est.getClass().getSimpleName());
+        sub.setFont(Palette.fontPlain(12));
+        sub.setForeground(Palette.TEXTO_GRIS);
+
+        namePanel.add(name);
+        namePanel.add(sub);
+        left.add(namePanel);
+
+        row.add(left, BorderLayout.WEST);
+        return row;
+    }
+
+    // ── MÉTODOS ORIGINALES PARA DATASTORE (NO LOS TOCAMOS) ───────────
+    private RoundedPanel buildRow(turquia.model.Usuario est) {
+        RoundedPanel row = new RoundedPanel(12, Palette.GUINDO);
+        row.setLayout(new BorderLayout(14, 0));
+        row.setBorder(new EmptyBorder(16, 20, 16, 20));
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 70));
+        row.setPreferredSize(new Dimension(10, 70));
+
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 14, 0));
         left.setOpaque(false);
 
@@ -95,7 +192,6 @@ public class EstudiantesPanel extends JPanel {
 
         row.add(left, BorderLayout.WEST);
 
-        // Botón ver detalle
         JButton verBtn = UIFactory.primaryButton("Ver perfil");
         verBtn.setPreferredSize(new Dimension(110, 36));
         verBtn.addActionListener(e -> abrirDetalle(est));
@@ -108,13 +204,14 @@ public class EstudiantesPanel extends JPanel {
         return row;
     }
 
-    private void abrirDetalle(Usuario est) {
+    private void abrirDetalle(turquia.model.Usuario est) {
         boolean esPropio = usuarioActual.getId() == est.getId();
-        boolean puedeGestionar = usuarioActual.getRol() == Rol.DOCENTE || usuarioActual.getRol() == Rol.ADMINISTRADOR;
+        boolean puedeGestionar = usuarioActual.getRol() == turquia.model.Rol.DOCENTE
+                || usuarioActual.getRol() == turquia.model.Rol.ADMINISTRADOR;
         boolean puedeVerNotas = esPropio || puedeGestionar;
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-            "Perfil de " + est.getNombre(), true);
+                "Perfil de " + est.getNombre(), true);
         dialog.setSize(560, 560);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(Palette.GUINDO_OSCURO);
@@ -125,7 +222,6 @@ public class EstudiantesPanel extends JPanel {
         content.setBackground(Palette.GUINDO_OSCURO);
         content.setBorder(new EmptyBorder(24, 24, 24, 24));
 
-        // Cabecera
         JLabel title = new JLabel(est.getNombre());
         title.setFont(Palette.fontBold(20));
         title.setForeground(Palette.TEXTO_CLARO);
@@ -137,7 +233,6 @@ public class EstudiantesPanel extends JPanel {
         subt.setBorder(new EmptyBorder(4, 0, 18, 0));
         content.add(subt);
 
-        // ── Materias inscritas ──────────────────────────────────────────
         JLabel materiasLbl = new JLabel("📚 Materias inscritas");
         materiasLbl.setFont(Palette.fontBold(14));
         materiasLbl.setForeground(Palette.CIAN);
@@ -160,8 +255,9 @@ public class EstudiantesPanel extends JPanel {
                 materiasBox.add(empty);
             }
             for (int idMat : ids) {
-                Materia m = DataStore.getInstance().buscarMateria(idMat);
-                if (m == null) continue;
+                turquia.model.Materia m = DataStore.getInstance().buscarMateria(idMat);
+                if (m == null)
+                    continue;
                 materiasBox.add(buildMateriaRow(est, m, puedeVerNotas, puedeGestionar, refreshHolder));
                 materiasBox.add(Box.createVerticalStrut(6));
             }
@@ -177,7 +273,6 @@ public class EstudiantesPanel extends JPanel {
         materiasScroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 200));
         content.add(materiasScroll);
 
-        // ── Asignar materia (solo docente/admin) ─────────────────────────
         if (puedeGestionar) {
             content.add(Box.createVerticalStrut(16));
             JLabel asignarLbl = new JLabel("➕ Asignar nueva materia");
@@ -190,19 +285,22 @@ public class EstudiantesPanel extends JPanel {
             addRow.setOpaque(false);
             addRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 40));
 
-            List<Materia> todas = DataStore.getInstance().getMaterias();
+            List<turquia.model.Materia> todas = DataStore.getInstance().getMaterias();
             String[] nombres = new String[todas.size()];
-            for (int i = 0; i < todas.size(); i++) nombres[i] = todas.get(i).getNombre();
+            for (int i = 0; i < todas.size(); i++)
+                nombres[i] = todas.get(i).getNombre();
             JComboBox<String> combo = UIFactory.comboBox(nombres);
 
             JButton addBtn = UIFactory.accentButton("Asignar");
             addBtn.setPreferredSize(new Dimension(110, 36));
             addBtn.addActionListener(e -> {
                 int idx = combo.getSelectedIndex();
-                if (idx < 0) return;
-                Materia m = todas.get(idx);
+                if (idx < 0)
+                    return;
+                turquia.model.Materia m = todas.get(idx);
                 if (est.getMateriasInscritas().contains(m.getId())) {
-                    JOptionPane.showMessageDialog(dialog, "El estudiante ya está inscrito en esa materia.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog, "El estudiante ya está inscrito en esa materia.", "Aviso",
+                            JOptionPane.INFORMATION_MESSAGE);
                     return;
                 }
                 DataStore.getInstance().asignarMateriaAEstudiante(est.getId(), m.getId());
@@ -214,7 +312,6 @@ public class EstudiantesPanel extends JPanel {
             content.add(addRow);
         }
 
-        // ── Botón cerrar ──────────────────────────────────────────────────
         content.add(Box.createVerticalGlue());
         JPanel closeRow = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         closeRow.setOpaque(false);
@@ -228,8 +325,8 @@ public class EstudiantesPanel extends JPanel {
         dialog.setVisible(true);
     }
 
-    /** Fila individual de materia dentro del detalle del estudiante. */
-    private JPanel buildMateriaRow(Usuario est, Materia m, boolean puedeVerNotas, boolean puedeGestionar, Runnable[] refreshHolder) {
+    private JPanel buildMateriaRow(turquia.model.Usuario est, turquia.model.Materia m, boolean puedeVerNotas,
+            boolean puedeGestionar, Runnable[] refreshHolder) {
         RoundedPanel row = new RoundedPanel(8, Palette.GUINDO_CLARO);
         row.setLayout(new BorderLayout(10, 0));
         row.setBorder(new EmptyBorder(8, 12, 8, 12));
@@ -248,8 +345,8 @@ public class EstudiantesPanel extends JPanel {
 
         if (puedeVerNotas) {
             String notaTxt = nota != null ? String.format("%.1f (%s)", nota.getValor(), nota.getEstado()) : "Sin nota";
-            Color notaColor = nota == null ? Palette.TEXTO_TENUE :
-                (nota.getValor() >= 51 ? Palette.EXITO : Palette.ERROR);
+            Color notaColor = nota == null ? Palette.TEXTO_TENUE
+                    : (nota.getValor() >= 51 ? Palette.EXITO : Palette.ERROR);
             JLabel notaLbl = new JLabel(notaTxt);
             notaLbl.setFont(Palette.fontBold(12));
             notaLbl.setForeground(notaColor);
@@ -267,19 +364,21 @@ public class EstudiantesPanel extends JPanel {
             editBtn.setFont(Palette.fontPlain(11));
             editBtn.addActionListener(e -> {
                 String input = JOptionPane.showInputDialog(this,
-                    "Nota para " + est.getNombre() + " en " + m.getNombre() + " (0-100):",
-                    nota != null ? String.valueOf(nota.getValor()) : "");
+                        "Nota para " + est.getNombre() + " en " + m.getNombre() + " (0-100):",
+                        nota != null ? String.valueOf(nota.getValor()) : "");
                 if (input != null && !input.trim().isEmpty()) {
                     try {
                         double val = Double.parseDouble(input.trim());
                         if (val < 0 || val > 100) {
-                            JOptionPane.showMessageDialog(this, "La nota debe estar entre 0 y 100.", "Valor inválido", JOptionPane.WARNING_MESSAGE);
+                            JOptionPane.showMessageDialog(this, "La nota debe estar entre 0 y 100.", "Valor inválido",
+                                    JOptionPane.WARNING_MESSAGE);
                             return;
                         }
                         DataStore.getInstance().asignarNota(est.getId(), m.getId(), val);
                         refreshHolder[0].run();
                     } catch (NumberFormatException ex) {
-                        JOptionPane.showMessageDialog(this, "Ingresa un número válido.", "Valor inválido", JOptionPane.WARNING_MESSAGE);
+                        JOptionPane.showMessageDialog(this, "Ingresa un número válido.", "Valor inválido",
+                                JOptionPane.WARNING_MESSAGE);
                     }
                 }
             });
