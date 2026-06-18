@@ -28,7 +28,8 @@ public class DocentesPanel extends JPanel {
         header.setOpaque(false);
         header.setBorder(new EmptyBorder(0, 0, 20, 0));
         header.add(UIFactory.sectionTitle("👨‍🏫 Docentes"), BorderLayout.WEST);
-        header.add(UIFactory.subtitle(DataStore.getInstance().getDocentes().size() + " docente(s) registrados"), BorderLayout.EAST);
+        header.add(UIFactory.subtitle(DataStore.getInstance().getDocentes().size() + " docente(s) registrados"),
+                BorderLayout.EAST);
         add(header, BorderLayout.NORTH);
 
         listContainer = new JPanel();
@@ -89,7 +90,8 @@ public class DocentesPanel extends JPanel {
         for (int idMat : doc.getMateriasImpartidas()) {
             Materia m = DataStore.getInstance().buscarMateria(idMat);
             if (m != null) {
-                if (materiasTxt.length() > 0) materiasTxt.append(", ");
+                if (materiasTxt.length() > 0)
+                    materiasTxt.append(", ");
                 materiasTxt.append(m.getSigla());
             }
         }
@@ -120,7 +122,7 @@ public class DocentesPanel extends JPanel {
         boolean puedeGestionar = usuarioActual.getRol() == Rol.ADMINISTRADOR;
 
         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this),
-            "Perfil de " + doc.getNombre(), true);
+                "Perfil de " + doc.getNombre(), true);
         dialog.setSize(520, 480);
         dialog.setLocationRelativeTo(this);
         dialog.getContentPane().setBackground(Palette.GUINDO_OSCURO);
@@ -164,7 +166,8 @@ public class DocentesPanel extends JPanel {
             }
             for (int idMat : ids) {
                 Materia m = DataStore.getInstance().buscarMateria(idMat);
-                if (m == null) continue;
+                if (m == null)
+                    continue;
                 materiasBox.add(buildMateriaRow(doc, m, puedeGestionar, refreshHolder));
                 materiasBox.add(Box.createVerticalStrut(6));
             }
@@ -194,17 +197,20 @@ public class DocentesPanel extends JPanel {
 
             List<Materia> todas = DataStore.getInstance().getMaterias();
             String[] nombres = new String[todas.size()];
-            for (int i = 0; i < todas.size(); i++) nombres[i] = todas.get(i).getNombre();
+            for (int i = 0; i < todas.size(); i++)
+                nombres[i] = todas.get(i).getNombre();
             JComboBox<String> combo = UIFactory.comboBox(nombres);
 
             JButton addBtn = UIFactory.accentButton("Asignar");
             addBtn.setPreferredSize(new Dimension(110, 36));
             addBtn.addActionListener(e -> {
                 int idx = combo.getSelectedIndex();
-                if (idx < 0) return;
+                if (idx < 0)
+                    return;
                 Materia m = todas.get(idx);
                 if (doc.getMateriasImpartidas().contains(m.getId())) {
-                    JOptionPane.showMessageDialog(dialog, "El docente ya imparte esa materia.", "Aviso", JOptionPane.INFORMATION_MESSAGE);
+                    JOptionPane.showMessageDialog(dialog, "El docente ya imparte esa materia.", "Aviso",
+                            JOptionPane.INFORMATION_MESSAGE);
                     return;
                 }
                 DataStore.getInstance().asignarMateriaADocente(doc.getId(), m.getId());
