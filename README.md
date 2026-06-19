@@ -1,23 +1,2 @@
-# TurquiaGmasmas.edu.gob.pe 
-Tariquia mal hecho
-Gabo si estás leyendo esto, ns que haces aquí KKKKK 
-  
-                 .88888888:.
-                88888888.88888.
-              .8888888888888888.
-              888888888888888888
-              88' _`88'_  `88888
-              88 88 88 88  88888
-              88_88_::_88_:88888
-              88:::,::,:::::8888                    El Windows para los que si saben
-              88`:::::::::'`8888                    Tux padreando desde siempre
-             .88  `::::'    8:88.                       :vvvvvvvvvvvvv
-            8888            `8:888.
-          .8888'             `888888.
-         .8888:..  .::.  ...:'8888888:.
-        .8888.'     :'     `'::`88:88888
-       .8888        '         `.888:8888.
-      888:8         .           888:88888
-    .888:88        .:           888:88888:
-    8888888.       ::           88:888888
-    `.::.888.      ::          .88888888
+Tariquia 
+Hecho en Java 
